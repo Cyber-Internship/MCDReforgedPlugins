@@ -154,6 +154,8 @@ def on_load(server: PluginServerInterface, old):
 
 
 def on_server_startup(server: PluginServerInterface):
+    # 服务器启动不发送消息
+    return
     send_msg_to_all_groups(f"Server [{config.server_name}] is started up")
 
 
@@ -165,6 +167,17 @@ def on_user_info(server: PluginServerInterface, info):
                 f"[{config.server_name}] <{info.player}> {info.content}"
             )
 
+def on_player_joined(server: PluginServerInterface, player: str, info):
+    # 玩家加入消息发送到同步群
+    send_msg_to_message_sync_groups(
+        f"[{config.server_name}] {player} 加入了游戏，快来和他玩吧！"
+    )
+
+def on_player_left(server: PluginServerInterface, player: str):
+    # 玩家离开消息发送到同步群
+    send_msg_to_message_sync_groups(
+        f"[{config.server_name}] {player} 离开了游戏，欢迎下次再来！"
+    )
 
 # -------------------------
 # qq_api event listener
