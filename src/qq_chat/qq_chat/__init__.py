@@ -154,9 +154,9 @@ def on_load(server: PluginServerInterface, old):
 
 
 def on_server_startup(server: PluginServerInterface):
+    # send_msg_to_all_groups(f"Server [{config.server_name}] is started up")
     # 服务器启动不发送消息
-    return
-    send_msg_to_all_groups(f"Server [{config.server_name}] is started up")
+    pass
 
 
 def on_user_info(server: PluginServerInterface, info):
@@ -219,10 +219,12 @@ def on_message(server: PluginServerInterface, bot: CQHttp,
             else:
                 server.say(f"§7[QQ] [{data[user_id]}] {event.content}")
         else:
-            reply_with_server_name(
-                event,
-                f"[CQ:at,qq={user_id}] 无法转发您的消息，请通过/bound <Player>绑定游戏ID"
-            )
+            # reply_with_server_name(
+            #     event,
+            #     f"[CQ:at,qq={user_id}] 无法转发您的消息，请通过/bound <Player>绑定游戏ID"
+            # )
+            # 未绑定的用户使用昵称发送消息
+            server.say(f"§7[QQ] [{event.sender.get('nickname')}] {event.content}")
 
 
 def on_notice(server: PluginServerInterface, bot: CQHttp, event: Event):
