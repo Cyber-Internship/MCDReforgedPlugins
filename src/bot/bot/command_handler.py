@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Any, List, Set, Callable, Union
+from typing import TYPE_CHECKING, List, Set, Callable
 
-from mcdreforged.api.types import ConsoleCommandSource, PlayerCommandSource
+from mcdreforged.api.types import CommandSource
 from mcdreforged.api.command import *
 from mcdreforged.api.rtext import *
 from mcdreforged.api.decorator import new_thread
@@ -14,8 +14,6 @@ from bot.location import Location
 
 if TYPE_CHECKING:
     from bot.plugin import Plugin
-
-Source = Union[ConsoleCommandSource, PlayerCommandSource]
 
 
 class PermissionsRequirements(Serializable):
@@ -47,7 +45,7 @@ class CommandHandler:
             }
         )
 
-        def bot_list(online: bool = None) -> Callable[[bool], List[str]]:
+        def bot_list(online: bool = None) -> Callable[[], List[str]]:
             return lambda: [
                 name for name, bot in
                 self.__plugin.bot_manager.bots.items()
@@ -349,7 +347,7 @@ class CommandHandler:
         # Return
         return name
 
-    def __command_list(self, src: Source, ctx: Dict[str, Any]):
+    def __command_list(self, src: CommandSource, ctx: CommandContext):
         index = ctx.get('index', 0)
         arg = ctx.get('arg', ListArguments.ALL)
         try:
@@ -445,7 +443,7 @@ class CommandHandler:
             )
 
     @new_thread('commandSpawn')
-    def __command_spawn(self, src: Source, ctx: Dict[str, Any]):
+    def __command_spawn(self, src: CommandSource, ctx: CommandContext):
         name = self.parse_name(ctx['name'])
         try:
             self.__plugin.bot_manager.spawn(
@@ -458,7 +456,7 @@ class CommandHandler:
         except BotOnlineException as e:
             src.reply(RTextMCDRTranslation('bot.error.botOnline', e.name))
 
-    def __command_kill(self, src: Source, ctx: Dict[str, Any]):
+    def __command_kill(self, src: CommandSource, ctx: CommandContext):
         name = self.parse_name(ctx['name'])
         try:
             self.__plugin.bot_manager.kill(name)
@@ -468,7 +466,7 @@ class CommandHandler:
         except BotOfflineException as e:
             src.reply(RTextMCDRTranslation('bot.error.botOffline', e.name))
 
-    def __command_action(self, src: Source, ctx: Dict[str, Any]):
+    def __command_action(self, src: CommandSource, ctx: CommandContext):
         name = self.parse_name(ctx['name'])
         try:
             self.__plugin.bot_manager.action(
@@ -484,13 +482,13 @@ class CommandHandler:
                 'bot.error.illegalActionIndex', e.index
             ))
 
-    def __command_tag_list(self, src: Source):
+    def __command_tag_list(self, src: CommandSource):
         src.reply(RTextMCDRTranslation(
             'bot.command.tag.list',
             list(self.tag_list())
         ))
 
-    def __command_tag_spawn(self, src: Source, ctx: Dict[str, Any]):
+    def __command_tag_spawn(self, src: CommandSource, ctx: CommandContext):
         tag = ctx['tag']
         try:
             # check tag exists
@@ -511,7 +509,7 @@ class CommandHandler:
         except TagNotExistsException:
             src.reply(RTextMCDRTranslation('bot.error.tagNotExists', tag))
 
-    def __command_tag_kill(self, src: Source, ctx: Dict[str, Any]):
+    def __command_tag_kill(self, src: CommandSource, ctx: CommandContext):
         tag = ctx['tag']
         try:
             # check tag exists
@@ -532,13 +530,13 @@ class CommandHandler:
         except TagNotExistsException:
             src.reply(RTextMCDRTranslation('bot.error.tagNotExists', tag))
 
-    def __command_info(self, src: Source, ctx: Dict[str, Any]):
+    def __command_info(self, src: CommandSource, ctx: CommandContext):
         name = self.parse_name(ctx['name'])
 
         def get_config_button(
                 bot_name: str,
                 config: str,
-                default_value: str
+                default_value: str = None
         ) -> RText:
             """
             Get a RText config button.
@@ -547,6 +545,9 @@ class CommandHandler:
             :param default_value: Default value of the config.
             :return: RText.
             """
+            if default_value is None:
+                default_value = ''
+
             return (
                 RText('[✐]', color=RColor.gray)
                 .h(
@@ -744,29 +745,29 @@ class CommandHandler:
                     bot.comment
                 ), '\n',
                 get_config_button(
-                    bot.name, 'actions', ''
+                    bot.name, 'actions'
                 ), ' ',
                 actions_info, '\n',
                 get_config_button(
-                    bot.name, 'tags', ''
+                    bot.name, 'tags'
                 ), ' ',
                 tags_info, '\n',
                 get_config_button(
-                    bot.name, 'autoLogin', bot.auto_login
+                    bot.name, 'autoLogin'
                 ), ' ',
                 RTextMCDRTranslation(
                     'bot.command.info.autoLogin',
                     bot.auto_login
                 ), '\n',
                 get_config_button(
-                    bot.name, 'autoRunActions', bot.auto_run_actions
+                    bot.name, 'autoRunActions'
                 ), ' ',
                 RTextMCDRTranslation(
                     'bot.command.info.autoRunActions',
                     bot.auto_run_actions
                 ), '\n',
                 get_config_button(
-                    bot.name, 'autoUpdate', bot.auto_update
+                    bot.name, 'autoUpdate'
                 ), ' ',
                 RTextMCDRTranslation(
                     'bot.command.info.autoUpdate',
@@ -777,7 +778,7 @@ class CommandHandler:
             src.reply(RTextMCDRTranslation('bot.error.botNotExists', e.name))
 
     @new_thread('commandSave')
-    def __command_save(self, src: Source, ctx: Dict[str, Any]):
+    def __command_save(self, src: CommandSource, ctx: CommandContext):
         name = self.parse_name(ctx['name'])
         position = ctx.get('position')
         facing = ctx.get('facing', [0.0, 0.0])
@@ -803,7 +804,7 @@ class CommandHandler:
                 RTextMCDRTranslation('bot.error.botAlreadySaved', e.name)
             )
 
-    def __command_del(self, src: Source, ctx: Dict[str, Any]):
+    def __command_del(self, src: CommandSource, ctx: CommandContext):
         name = self.parse_name(ctx['name'])
         try:
             self.__plugin.bot_manager.delete(name)
@@ -813,7 +814,7 @@ class CommandHandler:
         except BotNotSavedException as e:
             src.reply(RTextMCDRTranslation('bot.error.botNotSaved', e.name))
 
-    def __command_config_name(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_name(self, src: CommandSource, ctx: CommandContext):
         name = self.parse_name(ctx['name'])
         new_name = self.parse_name(ctx['newName'])
         try:
@@ -828,7 +829,9 @@ class CommandHandler:
         except BotNotExistsException as e:
             src.reply(RTextMCDRTranslation('bot.error.botNotExists', e.name))
 
-    def __command_config_position(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_position(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         position = ctx['position']
         try:
@@ -846,7 +849,7 @@ class CommandHandler:
         except BotNotExistsException as e:
             src.reply(RTextMCDRTranslation('bot.error.botNotExists', e.name))
 
-    def __command_config_facing(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_facing(self, src: CommandSource, ctx: CommandContext):
         name = self.parse_name(ctx['name'])
         facing = ctx['facing']
         try:
@@ -864,7 +867,9 @@ class CommandHandler:
         except BotNotExistsException as e:
             src.reply(RTextMCDRTranslation('bot.error.botNotExists', e.name))
 
-    def __command_config_dimension(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_dimension(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         dimension = ctx['dimension']
         try:
@@ -891,7 +896,9 @@ class CommandHandler:
                 RTextMCDRTranslation('bot.error.illegalDimension', e.dimension)
             )
 
-    def __command_config_comment(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_comment(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         comment = ctx['comment']
         try:
@@ -908,7 +915,7 @@ class CommandHandler:
             src.reply(RTextMCDRTranslation('bot.error.botNotExists', e.name))
 
     def __command_config_actions_append(
-            self, src: Source, ctx: Dict[str, Any]
+            self, src: CommandSource, ctx: CommandContext
     ):
         name = self.parse_name(ctx['name'])
         action = ctx['action']
@@ -927,7 +934,7 @@ class CommandHandler:
             src.reply(RTextMCDRTranslation('bot.error.botNotExists', e.name))
 
     def __command_config_actions_insert(
-            self, src: Source, ctx: Dict[str, Any]
+            self, src: CommandSource, ctx: CommandContext
     ):
         name = self.parse_name(ctx['name'])
         index = ctx['index']
@@ -955,7 +962,7 @@ class CommandHandler:
             ))
 
     def __command_config_actions_delete(
-            self, src: Source, ctx: Dict[str, Any]
+            self, src: CommandSource, ctx: CommandContext
     ):
         name = self.parse_name(ctx['name'])
         index = ctx['index']
@@ -981,7 +988,9 @@ class CommandHandler:
                 'bot.error.illegalActionIndex', e.index
             ))
 
-    def __command_config_actions_edit(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_actions_edit(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         index = ctx['index']
         action = ctx['action']
@@ -1007,7 +1016,9 @@ class CommandHandler:
                 'bot.error.illegalActionIndex', e.index
             ))
 
-    def __command_config_actions_clear(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_actions_clear(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         try:
             self.__plugin.bot_manager.get_bot(name).set_actions([])
@@ -1020,7 +1031,9 @@ class CommandHandler:
         except BotNotExistsException as e:
             src.reply(RTextMCDRTranslation('bot.error.botNotExists', e.name))
 
-    def __command_config_tags_append(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_tags_append(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         tag = ctx['tag']
         try:
@@ -1037,7 +1050,9 @@ class CommandHandler:
         except BotNotExistsException as e:
             src.reply(RTextMCDRTranslation('bot.error.botNotExists', e.name))
 
-    def __command_config_tags_insert(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_tags_insert(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         index = ctx['index']
         tag = ctx['tag']
@@ -1063,7 +1078,9 @@ class CommandHandler:
                 'bot.error.illegalTagIndex', e.index
             ))
 
-    def __command_config_tags_delete(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_tags_delete(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         index = ctx['index']
         try:
@@ -1088,7 +1105,9 @@ class CommandHandler:
                 'bot.error.illegalTagIndex', e.index
             ))
 
-    def __command_config_tags_edit(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_tags_edit(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         index = ctx['index']
         tag = ctx['tag']
@@ -1114,7 +1133,9 @@ class CommandHandler:
                 'bot.error.illegalTagIndex', e.index
             ))
 
-    def __command_config_tags_clear(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_tags_clear(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         try:
             self.__plugin.bot_manager.get_bot(name).set_tags([])
@@ -1127,7 +1148,9 @@ class CommandHandler:
         except BotNotExistsException as e:
             src.reply(RTextMCDRTranslation('bot.error.botNotExists', e.name))
 
-    def __command_config_auto_login(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_auto_login(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         auto_login = ctx['autoLogin']
         try:
@@ -1142,7 +1165,7 @@ class CommandHandler:
             src.reply(RTextMCDRTranslation('bot.error.botNotExists', e.name))
 
     def __command_config_auto_run_actions(
-            self, src: Source, ctx: Dict[str, Any]
+            self, src: CommandSource, ctx: CommandContext
     ):
         name = self.parse_name(ctx['name'])
         auto_run_actions = ctx['autoRunActions']
@@ -1160,7 +1183,9 @@ class CommandHandler:
         except BotNotExistsException as e:
             src.reply(RTextMCDRTranslation('bot.error.botNotExists', e.name))
 
-    def __command_config_auto_update(self, src: Source, ctx: Dict[str, Any]):
+    def __command_config_auto_update(
+            self, src: CommandSource, ctx: CommandContext
+    ):
         name = self.parse_name(ctx['name'])
         auto_update = ctx['autoUpdate']
         try:
