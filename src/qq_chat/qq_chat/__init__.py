@@ -1,5 +1,6 @@
 import re
-from typing import List, Dict
+import json
+from typing import List, Dict, Callable
 from asyncio import AbstractEventLoop
 
 from qq_api import MessageEvent
@@ -83,6 +84,9 @@ final_bot: CQHttp
 event_loop: AbstractEventLoop
 main_group: int
 
+old_on_plugin_registry_changed: Callable
+mcdr_commands: List[str] = []
+
 group_help = """命令帮助如下:
 /list 获取在线玩家列表
 /bound <ID> 绑定你的游戏ID
@@ -137,6 +141,18 @@ def on_load(server: PluginServerInterface, old):
     event_loop = qq_api.get_event_loop()
     main_group = parse_main_group()
 
+    # read mcdr commands
+    global old_on_plugin_registry_changed
+    global mcdr_commands
+    old_on_plugin_registry_changed = server._mcdr_server.on_plugin_registry_changed
+    def new_on_plugin_registry_changed():
+        old_on_plugin_registry_changed()
+        mcdr_commands.clear()
+        root_nodes = server._mcdr_server.command_manager.root_nodes
+        for name in root_nodes.keys():
+            mcdr_commands.append(name)
+    server._mcdr_server.on_plugin_registry_changed = new_on_plugin_registry_changed
+
     def qq(src, ctx):
         if config.commands["qq"] is True:
             player = src.player if src.is_player else "Console"
@@ -152,6 +168,10 @@ def on_load(server: PluginServerInterface, old):
     server.register_event_listener("qq_api.on_message", on_message)
     server.register_event_listener("qq_api.on_notice", on_notice)
 
+def on_unload(server: PluginServerInterface):
+    global old_on_plugin_registry_changed
+    server._mcdr_server.on_plugin_registry_changed = old_on_plugin_registry_changed
+
 
 def on_server_startup(server: PluginServerInterface):
     # send_msg_to_all_groups(f"Server [{config.server_name}] is started up")
@@ -162,7 +182,7 @@ def on_server_startup(server: PluginServerInterface):
 def on_user_info(server: PluginServerInterface, info):
     if info.is_player is True:
         # 所有信息都会发到同步群中
-        if not info.content.startswith("!!qq"):
+        if not info.content.startswith("!!qq") and info.content.split(" ")[0] not in mcdr_commands:
             send_msg_to_message_sync_groups(
                 f"[{config.server_name}] <{info.player}> {info.content}"
             )
