@@ -19,6 +19,9 @@
     "src/bot": {
       "package-name": "bot"
     },
+    "src/command_aliases": {
+      "package-name": "command_aliases"
+    },
     "src/database_api": {
       "package-name": "database_api"
     },
@@ -37,9 +40,6 @@
     "src/let_me_click_and_send": {
       "package-name": "let_me_click_and_send"
     },
-    "src/lowercase_mcdr_command": {
-      "package-name": "lowercase_mcdr_command"
-    },
     "src/minecraft_command_register": {
       "package-name": "minecraft_command_register"
     },
@@ -54,9 +54,6 @@
     },
     "src/qq_chat": {
       "package-name": "qq_chat"
-    },
-    "src/redirect_qb_to_pb": {
-      "package-name": "redirect_qb_to_pb"
     },
     "src/uuid_api": {
       "package-name": "uuid_api"
